@@ -7,7 +7,6 @@ import pandas as pd
 import re
 
 
-
 def get_cleaned_text(text, stem = False):
     cleaning_regex = "@\S+|https?:\S+|http?:\S|[^A-Za-z0-9]+"
     stop_words = stopwords.words("english")
@@ -44,8 +43,20 @@ def merge_and_index_data(input_file, min_tweets = 20):
     data.text = data.text.apply(lambda x: get_cleaned_text(x))
     sequences, tokenizer = text_to_sequence(data.text, Tokenizer)
     data["sequence"] = sequences
+    data = data[data.sequence.map(lambda x: len(x)) > 0]    
+    data = data.merge(data.sequence.apply(lambda x: split_X_and_Y(x)), 
+                    left_index = True, right_index = True)    
     return data, tokenizer
-    
+
+
+def split_X_and_Y(sequence):
+    X = [0]    
+    Y = [sequence[0]]
+    for idx, token in enumerate(sequence[:-1]):
+        X.append(token)
+        Y.append(sequence[idx + 1])
+    return pd.Series({"X": X, "Y": Y})
+
 
 def text_to_sequence(texts, tokenizer):
     tokenizer = tokenizer()
