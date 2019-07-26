@@ -1,4 +1,5 @@
 from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from random import sample
@@ -8,6 +9,22 @@ import pandas as pd
 import re
 
 from constants import CLEANING_REGEX, NEGATIONS_DICT
+
+
+def extend_data(X, Y, context_size):
+    new_X = []
+    new_Y = []
+    for idx, x in enumerate(X):
+        y = Y[idx]        
+        for idx2, word in enumerate(x):
+            if idx2 < 5:                
+                new_X.append(pad_sequences([x[:idx2 + 1]], maxlen = context_size)[0])
+            else:                
+                new_X.append(x[idx2 - context_size + 1: idx2 + 1])
+            new_Y.append(np.array(y[idx2], dtype = "int32"))
+    new_X = np.vstack(new_X)
+    new_Y = np.array(new_Y).astype(np.int32)
+    return new_X, new_Y
 
 
 def get_cleaned_text(text, stop_words, stemmer, stem = False):    
@@ -26,16 +43,14 @@ def get_cleaned_text(text, stop_words, stemmer, stem = False):
     return re.sub("'s", "is", text)
 
 
-def get_local_and_users_data(data, local_share = 0.1):
+def get_local_and_remote_data(data, local_share = 0.1):
     unique_users = data.user.unique()
-    local_users = np.random.choice(unique_users, 
-                                    int(local_share*unique_users.shape[0]))
-    remote_users = ~np.isin(unique_users, local_users)
+    idx_share = int(local_share*unique_users.shape[0])
+    local_users = unique_users[:idx_share]
+    remote_users = unique_users[idx_share:]
     local_data = data[data.user.isin(local_users)]
     remote_data = data[data.user.isin(remote_users)]
-    #TODO Finish it later
-
-
+    return local_data, remote_data
 
 
 def index_data_by_date(data, string_tz = "PDT"):
