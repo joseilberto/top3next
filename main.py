@@ -1,5 +1,5 @@
 from local import train_local_model
-from utils import extend_data, get_local_and_remote_data, merge_and_index_data
+from utils import get_local_and_remote_data, merge_and_index_data
 from models import LSTM_model
 
 

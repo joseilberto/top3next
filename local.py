@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 
 from models import CyclicLR, SPARSE_CATEGORICAL_CROSSENTROPY
+from utils import extend_data
 
 
 def train_local_model(model, data, tokenizer, model_file, batch_size = 256, 
