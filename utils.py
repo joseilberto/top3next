@@ -5,7 +5,9 @@ from nltk.stem import SnowballStemmer
 from random import sample
 
 import numpy as np
+import os
 import pandas as pd
+import pickle
 import re
 
 from constants import CLEANING_REGEX, NEGATIONS_DICT
@@ -63,7 +65,13 @@ def index_data_by_date(data, string_tz = "PDT"):
     return data
 
 
-def merge_and_index_data(input_file, min_tweets = 20):
+def merge_and_index_data(input_file, dump_file, word2idx_file, min_tweets = 20):        
+    if os.path.isfile(dump_file) and os.path.isfile(word2idx_file):
+        data = pd.read_pickle(dump_file)
+        with open(word2idx_file, "rb") as f:
+            word2idx = pickle.load(f)
+        return data, word2idx
+
     columns = ["target", "ids", "date", "flag", "user", "text"]
     stop_words = stopwords.words("english")
     stemmer = SnowballStemmer("english")
@@ -79,8 +87,11 @@ def merge_and_index_data(input_file, min_tweets = 20):
     data["sequence"] = sequences
     data = data[data.sequence.map(lambda x: len(x)) > 0]    
     data = data.merge(data.sequence.apply(lambda x: split_X_and_Y(x)), 
-                    left_index = True, right_index = True)    
-    return data, tokenizer
+                    left_index = True, right_index = True)
+    data.to_pickle(dump_file)    
+    with open(word2idx_file, "wb") as f:
+        pickle.dump(tokenizer.word_index, f, pickle.HIGHEST_PROTOCOL)
+    return data, tokenizer.word_index
 
 
 def split_X_and_Y(sequence):

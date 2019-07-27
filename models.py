@@ -1,7 +1,7 @@
 from gensim.models import KeyedVectors
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Bidirectional, Dense, Dropout, LSTM, Embedding
-from tensorflow.keras.losses import sparse_categorical_crossentropy
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.optimizers import Adam, SGD
@@ -84,23 +84,26 @@ class CyclicLR(Callback):
         K.set_value(self.model.optimizer.lr, self.clr())
 
 
-def embed_vocab(vocabulary, V, D):
+def compile_model(model, lr):
+    optimizer = Adam(lr = lr)
+    model.compile(loss = SparseCategoricalCrossentropy(from_logits = True), 
+                    optimizer = optimizer,
+                    metrics = ["sparse_categorical_accuracy"])
+    return model
+
+
+def embed_vocab(word2idx, V, D):
     word2vec = KeyedVectors.load_word2vec_format(GOOGLE_W2V, binary = True)
     embedding_matrix = np.zeros((V + 1, D))
-    for word, i in vocabulary.items():
+    for word, i in word2idx.items():
         if word in word2vec.vocab:
             embedding_matrix[i] = word2vec[word]
     return embedding_matrix
-    
-
-def SPARSE_CATEGORICAL_CROSSENTROPY(y_true, y_pred):
-    return sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
 
-def LSTM_model(vocabulary, D = 300, context_size = 5, lr = 1e-3):
-    V = len(vocabulary) + 1
-    embedding_matrix = embed_vocab(vocabulary, V, D)
-    optimizer = Adam(lr = lr)
+def LSTM_model(word2idx, D = 300, context_size = 5, lr = 1e-3):
+    V = len(word2idx) + 1
+    embedding_matrix = embed_vocab(word2idx, V, D)
     model = Sequential()
     model.add(Embedding(
                     input_dim = V + 1, output_dim = D, 
@@ -111,6 +114,7 @@ def LSTM_model(vocabulary, D = 300, context_size = 5, lr = 1e-3):
     model.add(Bidirectional(LSTM(128)))    
     model.add(Dropout(rate = 0.2))    
     model.add(Dense(V, activation = "linear"))    
-    model.compile(loss = SPARSE_CATEGORICAL_CROSSENTROPY, optimizer = optimizer,
-                    metrics = ["sparse_categorical_accuracy"])
+    model = compile_model(model, lr)
     return model
+
+

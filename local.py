@@ -3,21 +3,18 @@ from tensorflow.keras.models import load_model
 import matplotlib.pyplot as plt
 import os
 
-from models import CyclicLR, SPARSE_CATEGORICAL_CROSSENTROPY
+from models import CyclicLR
 from utils import extend_data
 
 
-def train_local_model(model, data, tokenizer, model_file, batch_size = 256, 
+def train_local_model(model, data, model_file, batch_size = 128, 
                 context_size = 5, epochs = 25, validation_split = 0.2,
                 retrain = False, show_progress = True):
     if os.path.isfile(model_file) and not retrain:
-        return load_model(model_file, custom_objects = {
-            "SPARSE_CATEGORICAL_CROSSENTROPY": SPARSE_CATEGORICAL_CROSSENTROPY})   
+        return load_model(model_file)   
     if os.path.isfile(model_file):
         del model
-        model = load_model(model_file, custom_objects = {
-            "SPARSE_CATEGORICAL_CROSSENTROPY": SPARSE_CATEGORICAL_CROSSENTROPY
-            })    
+        model = load_model(model_file)    
     X, Y = extend_data(data.X, data.Y, context_size)
     clr_triangular = CyclicLR(mode='triangular2', step_size = 2500)    
     progress = model.fit(X, Y, batch_size = batch_size, 
