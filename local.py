@@ -11,7 +11,8 @@ def train_local_model(model, data, tokenizer, model_file, batch_size = 256,
                 context_size = 5, epochs = 25, validation_split = 0.2,
                 retrain = False, show_progress = True):
     if os.path.isfile(model_file) and not retrain:
-        return    
+        return load_model(model_file, custom_objects = {
+            "SPARSE_CATEGORICAL_CROSSENTROPY": SPARSE_CATEGORICAL_CROSSENTROPY})   
     if os.path.isfile(model_file):
         del model
         model = load_model(model_file, custom_objects = {
@@ -25,7 +26,7 @@ def train_local_model(model, data, tokenizer, model_file, batch_size = 256,
                 validation_split = validation_split)    
     model.save(model_file)
     if show_progress:
-        fig, (ax1, ax2) = plt.subplots(nrows = 2)
+        fig, (ax1, ax2) = plt.subplots(ncols = 2)
         ax1.set_title("Loss over epochs")
         ax1.plot(progress.history["loss"], c = "k", label = "Training Loss")
         ax1.plot(progress.history["val_loss"], c = "r", label = "Validation loss")
@@ -38,3 +39,4 @@ def train_local_model(model, data, tokenizer, model_file, batch_size = 256,
         ax2.legend()
         fig.savefig("./data/progress_plot.pdf", format = "pdf")
         plt.close()
+    return model
