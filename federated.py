@@ -6,7 +6,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_federated as tff
 
-from models import compile_model
 from utils import extend_data
 
 
