@@ -13,7 +13,7 @@ if __name__ == "__main__":
     min_tweets = 20
     local_share = 0.2
     context_size = 5
-    epochs = 2
+    epochs = 3
     D = 300
     n_nodes = 128
     data, word2idx = merge_and_index_data(data_file, dump_file, word2idx_file, min_tweets)
