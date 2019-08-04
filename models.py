@@ -21,6 +21,7 @@ class bidirectional_LSTM(tnn.Module):
         self.V = V        
         self.D = D
         self.word2idx = word2idx
+        self.idx2word = {value: key for key, value in word2idx.items()}
         self.hidden_nodes = hidden_nodes
         self.n_fc_layer1 = 8*hidden_nodes        
         self.n_rnn_layers = n_rnn_layers
@@ -47,23 +48,33 @@ class bidirectional_LSTM(tnn.Module):
         h0 = th.autograd.Variable(th.zeros(2*self.n_rnn_layers, batch_size, 
                                                         self.hidden_nodes))
         c0 = th.autograd.Variable(th.zeros(2*self.n_rnn_layers, batch_size, 
-                                                        self.hidden_nodes))
-        return h0, c0
+                                                        self.hidden_nodes))        
+        return [h0, c0]
 
     
-    def forward(self, X, training = False):
-        embedded = self.embedding(X)
-        output, self.h_lstm = self.bi_lstm(embedded, self.h_lstm)                
-        output = output.transpose(1, 2)                
-        output = self.relu_layer(output[:, :, -1])
+    def _sequence_to_text(self, seq):
+        return " ".join([self.idx2word[int(idx)] for idx in seq])
+
+    
+    def forward(self, X):
+        embedded = self.embedding(X)        
+        for idx, hidden in enumerate(self.h_lstm):            
+            self.h_lstm[idx] = hidden.send(X.location)
+        output, _ = self.bi_lstm(embedded, self.h_lstm)        
+        output = output.transpose(1, 2)
+        output = self.relu_layer(output[:, :, -1])        
         output = self.fc_layer(output)
         return output
     
     
     def _score_from_outputs(self, outputs, Y):
-        preds = tnn.functional.softmax(outputs, dim = 1).topk(1, dim = 1).indices
-        accuracy = np.mean(preds.numpy().ravel().astype(np.int32) == Y)
-        return accuracy
+        preds = tnn.functional.softmax(outputs, dim = 1).topk(1, dim = 1)[1]
+        preds = preds.view([-1])
+        n_correct = 0
+        for output, target in zip(preds, Y):
+            if th.equal(target.long(), output.long()):
+                n_correct += 1
+        return n_correct / len(Y)
 
 
     def score_and_loss(self, X, Y, loss_fun, local, batch_size = 1024):
@@ -76,7 +87,7 @@ class bidirectional_LSTM(tnn.Module):
             if not local:
                 loss = loss.get()                
             loss_value = loss.item()
-            return self._score_from_outputs(outputs, Y.numpy()), loss_value
+            return self._score_from_outputs(outputs, Y), loss_value
         accuracy = 0
         loss_value = 0
         for j in range(n_batches):
@@ -89,34 +100,40 @@ class bidirectional_LSTM(tnn.Module):
             if not local:
                 loss = loss.get()
             loss_value += loss.item()
-            accuracy += self._score_from_outputs(outputs, Y_batch.numpy())
+            accuracy += self._score_from_outputs(outputs, Y_batch)
         return accuracy / n_batches, loss_value / n_batches
 
     
-    def fit_generator(self, generator, optimizer, batch_size = 64, epochs = 10,
+    def fit_dataset(self, dataset, optimizer, batch_size = 16, epochs = 10,
                         local = True, validation_split = 0.2,
-                        batch_print_epoch = 10):
-        for X, Y in generator:
+                        batch_print_epoch = 10):        
+        for worker, basedataset in dataset.datasets.items():
+            X = basedataset.data
+            Y = basedataset.targets
             if not local:
                 self.send(X.location)
             self.fit(X, Y, optimizer, batch_size, epochs, local, 
                         validation_split, batch_print_epoch)
             if not local:
-                self.get()            
+                self.get()
+            import ipdb; ipdb.set_trace()            
 
     
     def fit(self, X, Y, optimizer, batch_size = 64, epochs = 10, local = True,
             validation_split = 0.2, batch_print_epoch = 1):        
         n_samples = len(X)
+        optimizer = optimizer(self.parameters(), lr = self.lr)
         if local:
             X = th.tensor(X)        
             Y = th.tensor(Y)
-        if validation_split:
+        if validation_split and len(X) > batch_size:
             val_size = int(n_samples * (1 - validation_split))
             X_train, Y_train = X[:val_size], Y[:val_size]
             X_test, Y_test = X[val_size:], Y[val_size:]
-        optimizer = optimizer(self.parameters(), lr = self.lr)
-        n_batches = len(X_train) // batch_size
+        else:
+            X_train, Y_train = X.copy(), Y.copy()
+            X_test, Y_test = X.copy(), Y.copy()
+        n_batches = len(X_train) // batch_size            
         scheduler = CyclicLR(optimizer, self.lr / 1000, self.lr, 
                     step_size_up = 4000)
         batch_string = ("Running loss per batch epoch {}/{} on batch " + 
@@ -134,15 +151,13 @@ class bidirectional_LSTM(tnn.Module):
             running_loss = 0
             running_acc = 0
             for j in range(n_batches):
-                self.h_lstm = self._init_hidden(batch_size)
-                if not local:
-                    self.h_lstm = self.h_lstm.send(X.location)
+                self.h_lstm = self._init_hidden(batch_size)                
                 X_batch = X_train[j*batch_size:(j*batch_size + batch_size)]
                 Y_batch = Y_train[j*batch_size:(j*batch_size + batch_size)]
-                optimizer.zero_grad()                
-                outputs = self.forward(X_batch, True)                
+                optimizer.zero_grad()
+                outputs = self.forward(X_batch)                                
                 logits = self.activation_last_layer(outputs, dim = 1)
-                running_acc += self._score_from_outputs(outputs, Y_batch.numpy())
+                running_acc += self._score_from_outputs(outputs, Y_batch)
                 loss = loss_fun(logits, Y_batch.long())   
                 loss.backward()
                 scheduler.step()

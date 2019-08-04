@@ -19,19 +19,16 @@ def get_federated_dataset(data, users, context_size):
     return sy.FederatedDataset(users_data)
 
 
-def train_federated(model, dataloader, model_file, batch_size = 16,
-                    epochs = 50, validation_split = 0.1):
+def train_federated(model, dataset, model_file, batch_size = 16,
+                    epochs = 50, validation_split = 0.3):
     optimizer = th.optim.RMSprop
-    model.fit_generator(dataloader, optimizer, batch_size, epochs,
-                            local = False, validation_split = 0.2,
-                            batch_print_epoch = 2)
-    import ipdb; ipdb.set_trace()
-
-    
+    model.fit_dataset(dataset, optimizer, batch_size, epochs,
+                            local = False, validation_split = validation_split,
+                            batch_print_epoch = 1)
 
 
 def train_multiple_federated(model, data, model_file, V, user_split = 0.1, 
-                            batch_size = 16, context_size = 5, epochs = 50,
+                            batch_size = 64, context_size = 5, epochs = 50,
                             validation_split = 0.1):
     unique_users = data.user.unique()
     user_batch_size = int(unique_users.shape[0] // (user_split*10**2))
@@ -40,9 +37,7 @@ def train_multiple_federated(model, data, model_file, V, user_split = 0.1,
     for i in range(n_user_batches):
         cur_users = unique_users[i*user_batch_size:(i + 1)*user_batch_size]
         federated_dataset = get_federated_dataset(data, cur_users, context_size)
-        federated_loader = sy.FederatedDataLoader(federated_dataset,
-                                    shuffle = False, batch_size = batch_size)
-        federated_model = train_federated(federated_model, federated_loader, 
+        federated_model = train_federated(federated_model, federated_dataset, 
                                             model)
 
 
