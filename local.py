@@ -20,6 +20,8 @@ def train_local_model(model_class, word2idx, D, hidden_nodes, data, model_file,
     if os.path.isfile(model_file):                
         model.load_state_dict(th.load(model_file))        
     X, Y = extend_data(data.X, data.Y, context_size)
+    X = th.tensor(X)
+    Y = th.tensor(Y)
     optimizer = th.optim.RMSprop
     model.fit(X, Y, optimizer, batch_size, epochs, local = True)  
     th.save(model.state_dict(), model_file)

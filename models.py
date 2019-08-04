@@ -8,6 +8,8 @@ import torch as th
 import numpy as np
 
 from constants import GOOGLE_W2V
+from early_stop import EarlyStopping
+
 
 class bidirectional_LSTM(tnn.Module):
     def __init__(self, context_size, V, D, word2idx, hidden_nodes = 128,
@@ -104,28 +106,11 @@ class bidirectional_LSTM(tnn.Module):
         return accuracy / n_batches, loss_value / n_batches
 
     
-    def fit_dataset(self, dataset, optimizer, batch_size = 16, epochs = 10,
-                        local = True, validation_split = 0.2,
-                        batch_print_epoch = 10):        
-        for worker, basedataset in dataset.datasets.items():
-            X = basedataset.data
-            Y = basedataset.targets
-            if not local:
-                self.send(X.location)
-            self.fit(X, Y, optimizer, batch_size, epochs, local, 
-                        validation_split, batch_print_epoch)
-            if not local:
-                self.get()
-            import ipdb; ipdb.set_trace()            
-
-    
     def fit(self, X, Y, optimizer, batch_size = 64, epochs = 10, local = True,
-            validation_split = 0.2, batch_print_epoch = 1):        
+            validation_split = 0.2, batch_print_epoch = 1, verbose = True, 
+            patience = 10):        
         n_samples = len(X)
-        optimizer = optimizer(self.parameters(), lr = self.lr)
-        if local:
-            X = th.tensor(X)        
-            Y = th.tensor(Y)
+        optimizer = optimizer(self.parameters(), lr = self.lr)        
         if validation_split and len(X) > batch_size:
             val_size = int(n_samples * (1 - validation_split))
             X_train, Y_train = X[:val_size], Y[:val_size]
@@ -138,15 +123,20 @@ class bidirectional_LSTM(tnn.Module):
                     step_size_up = 4000)
         batch_string = ("Running loss per batch epoch {}/{} on batch " + 
                         "{}/{}: {:.3f}\t Running accuracy: {:.3f}").format
-        epoch_string = ("Running loss for epoch {}/{}: {:.3f}\t" + 
+        epoch_string = ("Epoch {}/{}\t" + 
                         "Training loss: {:.3f}\t" +
                         "Training accuracy: {:.3f}\t" + 
                         "Validation loss: {:.3f}\t" + 
                         "Validation accuracy: {:.3f}").format
-        if not local:            
-            loss_fun = self.loss_fun.send(X.location)            
-        else:
-            loss_fun = self.loss_fun        
+        loss_fun = self.loss_fun if local else self.loss_fun.send(X.location)
+        history = {
+                "train_acc": [], 
+                "train_loss": [], 
+                "val_acc": [], 
+                "val_loss": [],
+                }
+        early_stopping = EarlyStopping(patience = patience, verbose = False, 
+                                        local = local)        
         for epoch in range(epochs):
             running_loss = 0
             running_acc = 0
@@ -162,22 +152,33 @@ class bidirectional_LSTM(tnn.Module):
                 loss.backward()
                 scheduler.step()
                 optimizer.step()
-                if not local:
-                    loss = loss.get()                
+                loss = loss if local else loss.get()                
                 running_loss += loss.item()
-                if (j + 1) % batch_print_epoch == 0:
+                end_pat = "\n" if j == n_batches - 1 else "\r"
+                if (j + 1) % batch_print_epoch == 0 and local and verbose:
                     print(batch_string(epoch + 1, epochs, j + 1, n_batches, 
                                         running_loss / (j + 1), 
                                         running_acc / (j + 1)),
-                                        end = "\r")   
-            print("")
+                                        end = end_pat)                   
             train_accuracy, train_loss = self.score_and_loss(X_train, Y_train, 
                                                             loss_fun, local)
             validation_accuracy, validation_loss = self.score_and_loss(X_test, 
                                                     Y_test, loss_fun, local)
-            print(epoch_string(epoch + 1, epochs, running_loss / n_batches,
-                                train_loss, train_accuracy, 
-                                validation_loss, validation_accuracy))
+            if verbose:
+                print(epoch_string(epoch + 1, epochs, train_loss, 
+                                    train_accuracy, validation_loss, 
+                                    validation_accuracy))            
+            history["train_acc"].append(train_accuracy) 
+            history["train_loss"].append(train_loss)
+            history["val_acc"].append(validation_accuracy)
+            history["val_loss"].append(validation_loss)
+            early_stopping(validation_loss, self)
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
+        if early_stopping.early_stop:
+            self = early_stopping.best_model        
+        return history                
 
 
 def embed_vocab(word2idx, V, D):
