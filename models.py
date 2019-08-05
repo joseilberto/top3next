@@ -69,13 +69,18 @@ class bidirectional_LSTM(tnn.Module):
         return output
     
     
-    def _score_from_outputs(self, outputs, Y):
-        preds = tnn.functional.softmax(outputs, dim = 1).topk(1, dim = 1)[1]
-        preds = preds.view([-1])
+    def _score_from_outputs(self, outputs, Y, k = 1):                
+        preds = tnn.functional.softmax(outputs, dim = 1).topk(k, dim = 1)[1]
+        preds = preds.view([-1]) if k == 1 else preds
         n_correct = 0
-        for output, target in zip(preds, Y):
-            if th.equal(target.long(), output.long()):
-                n_correct += 1
+        for outputs, target in zip(preds, Y):
+            if k > 1:
+                for output in outputs:                               
+                    if th.equal(target.long(), output.long()):
+                        n_correct += 1
+                        break
+            elif k == 1 and th.equal(target.long(), outputs.long()):
+                n_correct += 1                    
         return n_correct / len(Y)
 
 
@@ -96,7 +101,7 @@ class bidirectional_LSTM(tnn.Module):
             self.h_lstm = self._init_hidden(batch_size)
             X_batch = X[j*batch_size:(j*batch_size + batch_size)]
             Y_batch = Y[j*batch_size:(j*batch_size + batch_size)]
-            outputs = self.forward(X_batch).view(batch_size, -1)
+            outputs = self.forward(X_batch)
             logits = self.activation_last_layer(outputs, dim = 1)
             loss = loss_fun(logits, Y_batch.long())
             if not local:
@@ -106,9 +111,26 @@ class bidirectional_LSTM(tnn.Module):
         return accuracy / n_batches, loss_value / n_batches
 
     
+    def score_topk(self, X, Y, local, topk_pred, batch_size = 1024):
+        n_batches = len(X) // batch_size
+        if n_batches == 0:
+            self.h_lstm = self._init_hidden(len(X))
+            outputs = self.forward(X).view(len(X), -1)
+            return self._score_from_outputs(outputs, Y, topk_pred)
+        accuracy = 0
+        loss_value = 0
+        for j in range(n_batches):
+            self.h_lstm = self._init_hidden(batch_size)
+            X_batch = X[j*batch_size:(j*batch_size + batch_size)]
+            Y_batch = Y[j*batch_size:(j*batch_size + batch_size)]
+            outputs = self.forward(X_batch)
+            accuracy += self._score_from_outputs(outputs, Y_batch. topk_pred)
+        return accuracy / n_batches
+
+    
     def fit(self, X, Y, optimizer, batch_size = 64, epochs = 10, local = True,
             validation_split = 0.2, batch_print_epoch = 1, verbose = True, 
-            patience = 10):        
+            patience = 10, topk_pred = None):        
         n_samples = len(X)
         optimizer = optimizer(self.parameters(), lr = self.lr)        
         if validation_split and len(X) > batch_size:
@@ -131,8 +153,10 @@ class bidirectional_LSTM(tnn.Module):
         loss_fun = self.loss_fun if local else self.loss_fun.send(X.location)
         history = {
                 "train_acc": [], 
+                "topk_train_acc": [],
                 "train_loss": [], 
                 "val_acc": [], 
+                "topk_val_acc": [],
                 "val_loss": [],
                 }
         early_stopping = EarlyStopping(patience = patience, verbose = False)        
@@ -163,13 +187,19 @@ class bidirectional_LSTM(tnn.Module):
                                                             loss_fun, local)
             validation_accuracy, validation_loss = self.score_and_loss(X_test, 
                                                     Y_test, loss_fun, local)
+            topk_train_acc = (self.score_topk(X_train, Y_train, local, topk_pred) 
+                                                    if topk_pred else 0)
+            topk_val_acc = (self.score_topk(X_test, Y_test, local, topk_pred) 
+                                                    if topk_pred else 0)
             if verbose:
                 print(epoch_string(epoch + 1, epochs, train_loss, 
                                     train_accuracy, validation_loss, 
                                     validation_accuracy))            
-            history["train_acc"].append(train_accuracy) 
+            history["train_acc"].append(train_accuracy)
+            history["topk_train_acc"].append(topk_train_acc)            
             history["train_loss"].append(train_loss)
             history["val_acc"].append(validation_accuracy)
+            history["topk_val_acc"].append(topk_val_acc)
             history["val_loss"].append(validation_loss)
             early_stopping(validation_loss, self)
             if early_stopping.early_stop and verbose:
