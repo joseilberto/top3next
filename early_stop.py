@@ -1,11 +1,10 @@
-import copy
 import numpy as np
 import torch
 
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience = 5, verbose = False, local = True):
+    def __init__(self, patience = 5, verbose = False):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -15,7 +14,6 @@ class EarlyStopping:
         """
         self.patience = patience
         self.verbose = verbose
-        self.local = local
         self.counter = 0
         self.best_score = None
         self.early_stop = False
@@ -31,7 +29,8 @@ class EarlyStopping:
             self.save_checkpoint(val_loss, model)
         elif score < self.best_score:
             self.counter += 1
-            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.verbose:
+                print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
@@ -43,10 +42,7 @@ class EarlyStopping:
     def save_checkpoint(self, val_loss, model):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
-            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Storing model ...')
-        if not self.local:
-            model = model.get() 
-        model_copy = copy.deepcopy(model) #TODO Not enough to deepcopy, still gives dict error
-        self.best_model = (model_copy if self.local 
-                                    else model_copy.send(model.location))
+            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Storing model ...')        
+        self.best_model = {key: value.clone() 
+                                for key, value in model.state_dict().items()}
         self.val_loss_min = val_loss

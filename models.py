@@ -135,8 +135,7 @@ class bidirectional_LSTM(tnn.Module):
                 "val_acc": [], 
                 "val_loss": [],
                 }
-        early_stopping = EarlyStopping(patience = patience, verbose = False, 
-                                        local = local)        
+        early_stopping = EarlyStopping(patience = patience, verbose = False)        
         for epoch in range(epochs):
             running_loss = 0
             running_acc = 0
@@ -173,11 +172,14 @@ class bidirectional_LSTM(tnn.Module):
             history["val_acc"].append(validation_accuracy)
             history["val_loss"].append(validation_loss)
             early_stopping(validation_loss, self)
-            if early_stopping.early_stop:
+            if early_stopping.early_stop and verbose:
                 print("Early stopping")
                 break
         if early_stopping.early_stop:
-            self = early_stopping.best_model        
+            for key, value in early_stopping.best_model.items():
+                self.state_dict()[key] = value
+            for key, value in history.items():
+                history[key] = value[:epoch + 1 - patience]
         return history                
 
 

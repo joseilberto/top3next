@@ -37,7 +37,7 @@ def update_params(params_dict, new_model, iteration):
 
 
 def train_federated(model, dataset, model_file, batch_size = 16,
-                    epochs = 25, validation_split = 0.2):
+                    epochs = 50, validation_split = 0.2):
     optimizer = th.optim.RMSprop    
     params_dict = {key: value for key, value in model.state_dict().items()}
     history = {
@@ -46,6 +46,8 @@ def train_federated(model, dataset, model_file, batch_size = 16,
                 "val_acc": np.zeros(epochs), 
                 "val_loss": np.zeros(epochs),
                 }
+    worker_string = "Copied model from worker {}/{}".format
+    n_workers = len(dataset.datasets)
     for idx, (worker, basedataset) in enumerate(dataset.datasets.items()):
         user_model = copy.deepcopy(model)
         X = basedataset.data
@@ -53,27 +55,30 @@ def train_federated(model, dataset, model_file, batch_size = 16,
         user_model = user_model.send(X.location)
         user_history = user_model.fit(X, Y, optimizer, batch_size, epochs, 
                         local = False, validation_split = validation_split, 
-                        verbose = True)
+                        verbose = False)
         history = update_history(history, user_history, idx + 1)                        
         user_model = user_model.get()        
         params_dict = update_params(params_dict, user_model, idx + 1)
+        end_string = "\n" if idx == n_workers - 1 else "\r"
+        print(worker_string(idx + 1, n_workers), end = end_string)
     import ipdb; ipdb.set_trace()
     model.load_state_dict(params_dict, strict = False)    
-    return model
+    return model, history
 
 
-def train_multiple_federated(model, data, model_file, V, user_split = 0.1, 
-                            batch_size = 64, context_size = 5, epochs = 50,
+def train_multiple_federated(model, data, model_file, V, user_batch_size = 50, 
+                            batch_size = 16, context_size = 5, epochs = 50,
                             validation_split = 0.2):
     unique_users = data.user.unique()
-    user_batch_size = int(unique_users.shape[0] // (user_split*10**2))
-    n_user_batches = int(1 // user_split)
+    n_user_batches = len(unique_users) // user_batch_size
     federated_model = copy.deepcopy(model)    
     for i in range(n_user_batches):
         cur_users = unique_users[i*user_batch_size:(i + 1)*user_batch_size]
         federated_dataset = get_federated_dataset(data, cur_users, context_size)
         federated_model, split_history = train_federated(federated_model, 
-                                            federated_dataset, model)
+                                            federated_dataset, model, 
+                                            batch_size, epochs, 
+                                            validation_split)
         
 
 
