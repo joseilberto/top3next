@@ -1,3 +1,5 @@
+import copy
+
 GOOGLE_W2V = "./data/GoogleNews-vectors-negative300.bin.gz"
 
 NEGATIONS_DICT = {
@@ -11,3 +13,15 @@ NEGATIONS_DICT = {
                 }
 
 CLEANING_REGEX = "@\S+|https?:\S+|http?:\S|[^A-Za-z0-9]+"
+
+HISTORY = lambda param: {
+                "train_acc": copy.deepcopy(param),
+                "topk_train_acc": copy.deepcopy(param),
+                "train_loss": copy.deepcopy(param), 
+                "val_acc": copy.deepcopy(param), 
+                "topk_val_acc": copy.deepcopy(param),
+                "val_loss": copy.deepcopy(param),
+                }
+
+
+

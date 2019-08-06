@@ -8,7 +8,7 @@ class EarlyStopping:
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
-                            Default: 7
+                            Default: 5
             verbose (bool): If True, prints a message for each validation loss improvement. 
                             Default: False
         """

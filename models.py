@@ -7,7 +7,7 @@ import torch.nn as tnn
 import torch as th
 import numpy as np
 
-from constants import GOOGLE_W2V
+from constants import GOOGLE_W2V, HISTORY
 from early_stop import EarlyStopping
 
 
@@ -151,14 +151,7 @@ class bidirectional_LSTM(tnn.Module):
                         "Validation loss: {:.3f}\t" + 
                         "Validation accuracy: {:.3f}").format
         loss_fun = self.loss_fun if local else self.loss_fun.send(X.location)
-        history = {
-                "train_acc": [], 
-                "topk_train_acc": [],
-                "train_loss": [], 
-                "val_acc": [], 
-                "topk_val_acc": [],
-                "val_loss": [],
-                }
+        history = HISTORY([])
         early_stopping = EarlyStopping(patience = patience, verbose = False)        
         for epoch in range(epochs):
             running_loss = 0

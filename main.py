@@ -7,7 +7,7 @@ from models import bidirectional_LSTM
 if __name__ == "__main__":
     data_file = "data/kaggle_twitter.csv"
     model_file = "data/LSTM_model_local.pth"
-    federated_file = "data/LSTM_model_federated.h5"
+    federated_file = "data/LSTM_model_federated.pth"
     dump_file = "data/pandas_df.pkl"
     word2idx_file = "data/tokenizer_keys.pkl"
     min_tweets = 20
