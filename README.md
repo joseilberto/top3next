@@ -26,17 +26,9 @@ server-side and using federated learning in client-side reproduced using
 limited by a 20ms time response for each sample, the following actions were 
 done:
 
-- [X] Try a few different models for next word prediction in the server-side's 
-data (all the results showed below are for 5 epochs of training):
-
-Model | Top-1 Validation Score | Top-3 Validation Score
-------------- | ------------- | -------------
-GRU | 0.01 | 0.03
-LSTM | 0.02 | 0.04
-[genCNN](https://pdfs.semanticscholar.org/8645/643ad5dfe662fa38f61615432d5c9bdf2ffb.pdf) | 0.03 | 0.04
-Bidirectional LSTM | 0.05 | 0.07
-
-- [X] Train the server-side's model and send it to the batches of users;
+- [X] Try a few different models for next word prediction in the server-side 
+data;
+- [X] Train the server-side model and send it to the batches of users;
 - [X] Execute rounds of training into batches of users data;
 - [X] Create a simple visualization pipeline for the federated training process;
 - [ ] Observe the improvement of accuracy over rounds for the federated trained model.
@@ -53,7 +45,7 @@ in social media.
 Also, I would like to thank Google for the pre-trained word vectors from
 [GoogleNews-vectors-negative300](https://code.google.com/archive/p/word2vec/).
 It allowed that the training process focused only on the neural network itself,
-leaving the word embeddings unchanged during both the server-side and user-side's
+leaving the word embeddings unchanged during both the server-side and user-side
 training.
 
 ## Dependencies
@@ -88,12 +80,31 @@ from utils.processors import get_cleaned_text
 stop_words = stopwords.words("english")
 stemmer = SnowballStemmer("english")
 sentence = "the quick-brown-fox jumps over the lazy dog"
-get_cleaned_text("the quick-brown-fox jumps over the lazy dog", stop_words, stemmer)
+cleaned_sentence = get_cleaned_text("the quick-brown-fox jumps over the lazy dog", 
+                    stop_words, stemmer)
+print(cleaned_sentence)
 ```
 
 ```console
 'quick brown fox jumps lazy dog'
 ```
 
-## Model Selection
+## Model Selection and server training
+
+Regarding the model selection, a few models were tested before deciding on using
+the bidirectional LSTM. We can observe a table below listing some results for
+5 epochs of training in server-side data for 4 models that were tested:
+
+Model | Top-1 Train score | Top-1 Validation Score | Top-3 Train Score | Top-3 Validation Score
+------------- :| ------------- :| ------------- :| ------------- :| ------------- :|
+GRU | 0.07 | 0.01 | 0.15 | 0.03
+LSTM | 0.09 | 0.03 | 0.20 | 0.05
+[genCNN](https://pdfs.semanticscholar.org/8645/643ad5dfe662fa38f61615432d5c9bdf2ffb.pdf) | 0.10 | 0.03 | 0.20 | 0.04
+Bidirectional LSTM | 0.14 | 0.05 | 0.23 | 0.07
+
+It is important to notice that in all cases the trained models could not
+achieve the accuracy reported in Gboard paper if considered a validation dataset 
+within each user data. 
+
+
 
