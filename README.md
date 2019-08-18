@@ -59,7 +59,7 @@ training.
 ## Dependencies
 
 All the dependencies are available in the [requirements file](requirements.yml) 
-file for [Anaconda](https://www.anaconda.com/distribution/#download-section). They
+for [Anaconda](https://www.anaconda.com/distribution/#download-section). They
 can be simply installed and sourced using the commands below:
 
 ```
@@ -67,12 +67,30 @@ conda env create -f environment.yml
 conda activate top3next
 ```
 
-## Data Processing
+## Data pre-processing
 
 Since we are using sentiment140 dataset which has many instances of empty text samples,
 duplicates, contractions, typos, etc, a data pre-processing was required. The 
-pre-processing was inspired in two kernels from Kaggle:
+pre-processing was inspired in two kernels from Kaggle 
+([Paolo Ripamonti's](https://www.kaggle.com/paoloripamonti/twitter-sentiment-analysis)
+and [Mohamed Gamal's](https://www.kaggle.com/gemyhamed/sentiment-analysis-word-embedding-lstm-cnn)). 
+When put together both kernels, all the listed problems above are taken into
+account and it was also added the stop words to avoid any unnecessary 
+words to be added in our vocabulary.
 
-- [Paolo Ripamonti](https://www.kaggle.com/paoloripamonti/twitter-sentiment-analysis)
-- [Mohamed Gamal](https://www.kaggle.com/gemyhamed/sentiment-analysis-word-embedding-lstm-cnn).
+A quick example of what the pre-processing can be seen below:
+```python
+from nltk.corpus import stopwords
+from nltk.stem import SnowballStemmer
 
+from utils.processors import get_cleaned_text
+
+stop_words = stopwords.words("english")
+stemmer = SnowballStemmer("english")
+sentence = "the quick-brown-fox jumps over the lazy dog"
+get_cleaned_text("the quick-brown-fox jumps over the lazy dog", stop_words, stemmer)
+```
+
+```
+'quick brown fox jumps lazy dog'
+```
