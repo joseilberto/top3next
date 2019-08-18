@@ -5,12 +5,8 @@ import pandas as pd
 import syft as sy
 import torch as th
 
-from constants import HISTORY
-from utils import extend_data
-
-
-def clean_hook(hook):
-    import ipdb; ipdb.set_trace()
+from utils.constants import HISTORY
+from utils.processors import extend_data
 
 
 def get_federated_dataset(data, users, context_size, hook):

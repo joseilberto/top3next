@@ -1,7 +1,7 @@
 from federated import train_federated, train_multiple_federated
 from local import train_local_model
-from utils import get_local_and_remote_data, merge_and_index_data
-from models import bidirectional_LSTM
+from utils.processors import get_local_and_remote_data, merge_and_index_data
+from utils.models import bidirectional_LSTM
 
 
 if __name__ == "__main__":

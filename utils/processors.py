@@ -10,7 +10,7 @@ import pandas as pd
 import pickle
 import re
 
-from constants import CLEANING_REGEX, NEGATIONS_DICT
+from .constants import CLEANING_REGEX, NEGATIONS_DICT
 
 
 def extend_data(X, Y, context_size):

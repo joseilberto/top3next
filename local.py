@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import os
 import torch as th
 
-from utils import extend_data
+from utils.processors import extend_data
 
 
 def train_local_model(model_class, word2idx, D, hidden_nodes, data, model_file, 

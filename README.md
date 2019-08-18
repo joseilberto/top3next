@@ -15,14 +15,19 @@ training and a better federated model the following steps in processing the data
 were taken:
 
 - [X] Restricting the data only to frequent users of the platform;
-- [X] Clear the raw entry data from users (eliminating empty samples, duplicates and emoticons, ravelling contracted forms and removing stop words);
+- [X] Clear the raw entry data from users (eliminating empty samples, 
+duplicates and emoticons, ravelling contracted forms and removing stop words);
 - [X] Split the data into server-side's and client-side's;
 - [X] Transform text to sequences using a context of given size.
 
 The processed data was then used in both the traditional supervised learning in
-server-side and using federated learning in client-side reproduced using [Pysyft](https://github.com/OpenMined/PySyft).
+server-side and using federated learning in client-side reproduced using 
+[Pysyft](https://github.com/OpenMined/PySyft). In order to find the best model
+limited by a 20ms time response for each sample, the following actions were 
+done:
 
-- [X] Try a few different models for next word prediction respecting the 20ms time response for next word prediction in the server-side's data (all the results showed below are for 3 epochs of training):
+- [X] Try a few different models for next word prediction in the server-side's 
+data (all the results showed below are for 5 epochs of training):
 
 Model | Top-1 Validation Score | Top-3 Validation Score
 ------------- | ------------- | -------------
@@ -48,7 +53,7 @@ in social media.
 Also, I would like to thank Google for the pre-trained word vectors from
 [GoogleNews-vectors-negative300](https://code.google.com/archive/p/word2vec/).
 It allowed that the training process focused only on the neural network itself,
-leaving the word embeddings unchanged during both the server-side's and user-side's
+leaving the word embeddings unchanged during both the server-side and user-side's
 training.
 
 ## Dependencies
@@ -62,4 +67,12 @@ conda env create -f environment.yml
 conda activate top3next
 ```
 
-## 
+## Data Processing
+
+Since we are using sentiment140 dataset which has many instances of empty text samples,
+duplicates, contractions, typos, etc, a data pre-processing was required. The 
+pre-processing was inspired in two kernels from Kaggle:
+
+- [Paolo Ripamonti](https://www.kaggle.com/paoloripamonti/twitter-sentiment-analysis)
+- [Mohamed Gamal](https://www.kaggle.com/gemyhamed/sentiment-analysis-word-embedding-lstm-cnn).
+

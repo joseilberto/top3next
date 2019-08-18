@@ -7,8 +7,8 @@ import torch.nn as tnn
 import torch as th
 import numpy as np
 
-from constants import GOOGLE_W2V, HISTORY
-from early_stop import EarlyStopping
+from .constants import GOOGLE_W2V, HISTORY
+from .early_stop import EarlyStopping
 
 
 class bidirectional_LSTM(tnn.Module):
@@ -60,8 +60,9 @@ class bidirectional_LSTM(tnn.Module):
     
     def forward(self, X):
         embedded = self.embedding(X)        
-        for idx, hidden in enumerate(self.h_lstm):            
-            self.h_lstm[idx] = hidden.send(X.location)
+        if hasattr(X, "location"):
+            for idx, hidden in enumerate(self.h_lstm):            
+                self.h_lstm[idx] = hidden.send(X.location)            
         output, _ = self.bi_lstm(embedded, self.h_lstm)        
         output = output.transpose(1, 2)
         output = self.relu_layer(output[:, :, -1])        
