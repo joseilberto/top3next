@@ -95,12 +95,12 @@ Regarding the model selection, a few models were tested before deciding on using
 the bidirectional LSTM. We can observe a table below listing some results for
 5 epochs of training in server-side data for 4 models that were tested:
 
-| Model | Top-1 Train score | Top-1 Validation Score | Top-3 Train Score | Top-3 Validation Score|
+| Model | Top-1 Train score | Top-1 Validation Score | Top-3 Train Score | Top-3 Validation Score |
 |------------- | ------------- :| ------------- :| ------------- :| ------------- :|
-GRU | 0.07 | 0.01 | 0.15 | 0.03
-LSTM | 0.09 | 0.03 | 0.20 | 0.05
-[genCNN](https://pdfs.semanticscholar.org/8645/643ad5dfe662fa38f61615432d5c9bdf2ffb.pdf) | 0.10 | 0.03 | 0.20 | 0.04
-Bidirectional LSTM | 0.14 | 0.05 | 0.23 | 0.07
+| GRU | 0.07 | 0.01 | 0.15 | 0.03 |
+| LSTM | 0.09 | 0.03 | 0.20 | 0.05 |
+| [genCNN](https://pdfs.semanticscholar.org/8645/643ad5dfe662fa38f61615432d5c9bdf2ffb.pdf) | 0.10 | 0.03 | 0.20 | 0.04 |
+| Bidirectional LSTM | 0.14 | 0.05 | 0.23 | 0.07 |
 
 It is important to notice that in all cases the trained models could not
 achieve the accuracy reported in Gboard paper if considered a validation dataset 
