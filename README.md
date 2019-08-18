@@ -78,7 +78,7 @@ When put together both kernels, all the listed problems above are taken into
 account and it was also added the stop words to avoid any unnecessary 
 words to be added in our vocabulary.
 
-A quick example of what the pre-processing can be seen below:
+A quick example of what the pre-processing does can be seen below:
 ```python
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
@@ -91,6 +91,9 @@ sentence = "the quick-brown-fox jumps over the lazy dog"
 get_cleaned_text("the quick-brown-fox jumps over the lazy dog", stop_words, stemmer)
 ```
 
-```
+```console
 'quick brown fox jumps lazy dog'
 ```
+
+## Model Selection
+
