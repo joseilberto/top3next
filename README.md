@@ -7,11 +7,21 @@ Learning for next word prediction. The original results were described in the pa
 [FEDERATED LEARNING FOR MOBILE KEYBOARD PREDICTION](https://arxiv.org/pdf/1811.03604.pdf)
 by Google AI team. 
 
-The main objectives of the present project are listed below:
+## Objectives
+
+The present project intends to reproduce actual user data
+that can be sent to a Machine Learning model. In order to have a smoother 
+training and a better federated model the following steps in processing the dataset
+were taken:
+
 - [X] Restricting the data only to frequent users of the platform;
 - [X] Clear the raw entry data from users (eliminating empty samples, duplicates and emoticons, ravelling contracted forms and removing stop words);
 - [X] Split the data into server-side's and client-side's;
-- [X] Transform text to sequences using a context of given size;
+- [X] Transform text to sequences using a context of given size.
+
+The processed data was then used in both the traditional supervised learning in
+server-side and using federated learning in client-side reproduced using [Pysyft](https://github.com/OpenMined/PySyft).
+
 - [X] Try a few different models for next word prediction respecting the 20ms time response for next word prediction in the server-side's data (all the results showed below are for 3 epochs of training):
 
 Model | Top-1 Validation Score | Top-3 Validation Score
@@ -23,7 +33,7 @@ Bidirectional LSTM | 0.05 | 0.07
 
 - [X] Train the server-side's model and send it to the batches of users;
 - [X] Execute rounds of training into batches of users data;
-- [X] Create a basic vizualiation pipeline for the federated training process;
+- [X] Create a simple visualization pipeline for the federated training process;
 - [ ] Observe the improvement of accuracy over rounds for the federated trained model.
 
 ## Datasets
@@ -52,3 +62,4 @@ conda env create -f environment.yml
 conda activate top3next
 ```
 
+## 
