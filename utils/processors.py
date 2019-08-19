@@ -9,6 +9,8 @@ import os
 import pandas as pd
 import pickle
 import re
+import torch as th
+import torch.nn as tnn
 
 from .constants import CLEANING_REGEX, NEGATIONS_DICT
 
@@ -81,9 +83,9 @@ def merge_and_index_data(input_file, dump_file, word2idx_file, min_tweets = 20):
     users = data.groupby(by = "user").apply(len) > min_tweets
     data = data[data.user.isin(users[users].index)]
     data = index_data_by_date(data)
-    data.text = data.text.apply(lambda x: get_cleaned_text(x, stop_words, stemmer))
-    data.drop_duplicates(subset = ["text"], keep = False, inplace = True)
-    sequences, tokenizer = text_to_sequence(data.text, Tokenizer)
+    data["cleaned_text"] = data.text.apply(lambda x: get_cleaned_text(x, stop_words, stemmer))
+    data.drop_duplicates(subset = ["cleaned_text"], keep = False, inplace = True)
+    sequences, tokenizer = text_to_sequence(data.cleaned_text, Tokenizer)
     data["sequence"] = sequences
     data = data[data.sequence.map(lambda x: len(x)) > 0]    
     data = data.merge(data.sequence.apply(lambda x: split_X_and_Y(x)), 
@@ -109,3 +111,18 @@ def text_to_sequence(texts, tokenizer):
     return tokenizer.texts_to_sequences(texts), tokenizer
 
 
+def print_predictions(sentence, model):
+    sequence = [model.word2idx[word] for word in sentence]
+    splitted = split_X_and_Y(sequence)    
+    X, Y = extend_data([splitted.X], [splitted.Y], model.context_size)
+    X, Y = th.tensor(X), th.tensor(Y)
+    model.h_lstm = model._init_hidden(len(X))
+    preds = tnn.functional.softmax(model.forward(X), dim = 1).topk(3, dim = 1)[1]
+    for idx, pred in enumerate(preds[1:-1]):
+        word_preds = []        
+        for idx2 in pred:
+            word_preds.append(model.idx2word[int(idx2)])            
+        prev_word = sentence[idx]
+        expected_word = sentence[idx + 1]
+        print("Previous word: {} \t Expected word: {} \t Predictions: {}\t{}\t{}".format(prev_word, expected_word, *word_preds))
+    

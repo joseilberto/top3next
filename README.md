@@ -111,7 +111,7 @@ tend to find better predictions only in the data it is being trained.
 ### Visualizing the predictions
 
 In order to understand how these accuracies relate to word predictions, the
-following code example is put:
+following code brings a simple example of how we can visualize these predictions.
 
 ```python
 from nltk.corpus import stopwords
