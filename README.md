@@ -224,5 +224,9 @@ Private AI Scholarship Challenge.
 
 Secondly, and lastly to all the Udacity team (Akshit and Palak specially) and all
 my fellow scholars (huge thanks to Usman Umar, Berenice, Aleksandra Deis, 
-Adriel Vieira, ThienAn and Abhishek Tandon). I wish you all best of luck and I 
+Adriel Vieira, ThienAn, Abhishek Tandon, Maria and Frida). I wish you all best of luck and I 
 hope you guys go to the 2nd phase, you totally deserve it.
+
+## Participants
+
+José Ilberto Fonceca Junior
