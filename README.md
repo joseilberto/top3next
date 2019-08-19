@@ -37,12 +37,12 @@ data;
 
 I would like to acknowledge Alec Go, Richa Bhayani, and Lei Huang for 
 making available the [sentiment140 dataset](http://help.sentiment140.com/for-students)
-with 1,600,000 tweets. The choice of using twitter data is that it is the closest
-one could assume that typed data looks like for Gboard application. This assumption
-comes from the fact that most people use their smartphones to write friends and post
-in social media.
+with 1,600,000 tweets. The choice of using Twitter data can be justified by the
+fact that it is the closest one could assume that typed data looks like for 
+Gboard application. This assumption comes from the fact that most people use 
+their smartphones to write friends and post in social media.
 
-Also, I would like to thank Google for the pre-trained word vectors from
+Also, I would like to thank Google for the word2vec pre-trained word vectors from
 [GoogleNews-vectors-negative300](https://code.google.com/archive/p/word2vec/).
 It allowed that the training process focused only on the neural network itself,
 leaving the word embeddings unchanged during both the server-side and user-side
@@ -104,7 +104,53 @@ Bidirectional LSTM | 0.14 | 0.05 | 0.23 | 0.07
 
 It is important to notice that in all cases the trained models could not
 achieve the accuracy reported in Gboard paper if considered a validation dataset 
-within each user data. 
+within each user data. These results suggest that in all scenarios, even though
+the train loss and validation loss are similar, the models overfit and 
+tend to find better predictions only in the data it is being trained. 
 
+### Visualizing the predictions
+
+In order to understand how these accuracies relate to word predictions, the
+following code example is put:
+
+```python
+from nltk.corpus import stopwords
+from nltk.stem import SnowballStemmer
+
+import torch as th
+
+from utils.models import bidirectional_LSTM
+from utils.processors import get_cleaned_text, print_predictions
+
+stop_words = stopwords.words("english")
+stemmer = SnowballStemmer("english")
+context_size = 5
+D = 300
+word2idx = ... #word2idx dictionary
+hidden_nodes = 128
+local_model = "local_model.pth" #local pre-trained model file
+model = bidirectional_LSTM(context_size, len(word2idx), D, word2idx, hidden_nodes)
+model.load_state_dict(th.load(model_file))
+sentence_example = "i have a colossal headache. it  feels like a nuclear weapon testing facility in there"
+cleaned_sentence = get_cleaned_text(sentence_example, stop_words, stemmer).split()
+print(" ".join(cleaned_sentence))
+print_predictions(cleaned_sentence, model)
+```
+
+```console
+'colossal headache feels like nuclear weapon testing facility'
+Previous word: colossal          Expected word: headache         Predictions: day           headache        piece
+Previous word: headache          Expected word: feels            Predictions: throat        hope            morning
+Previous word: feels             Expected word: like             Predictions: like          better          guilty
+Previous word: like              Expected word: nuclear          Predictions: good          title           day
+Previous word: nuclear           Expected word: weapon           Predictions: browser       4th             articles
+Previous word: weapon            Expected word: testing          Predictions: balm          question        side
+```
+
+For this specific case, the top-3 accuracy is 0.33 what is expected for a sample 
+contained in the training data.
+
+
+## Federated Learning results
 
 
