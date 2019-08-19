@@ -185,6 +185,7 @@ Put all these factors together, we were expected to find that the federated
 model performed just as good as the local model, but consuming less server time
 and improving the overall prediction for each individual user. 
 
-![Top-1 Federated Learning Accuracy](top1_fl.png)
+Top-1 Federated Learning Accuracy      |  Top-3 Federated Learning Accuracy
+:-------------------------:|:-------------------------:
+![](top1_fl.png)  |  ![](top3_fl.png)
 
-![Top-3 Federated Learning Accuracy](top3_fl.png)
