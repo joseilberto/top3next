@@ -217,5 +217,12 @@ I was able to identify the problem, due to the deadline of the current project,
 I could solve them satisfactorily and show better results that would encourage
 the usage of both Pysyft and Pytorch for toy models Federated Learning Projects.
 
+## Acknowledgements
 
+Firstly, I would like to thank Udacity for being accepted in the Secure And
+Private AI Scholarship Challenge. 
 
+Secondly, and lastly to all the Udacity team (Akshit and Palak specially) and all
+my fellow scholars (huge thanks to Usman Umar, Berenice, Aleksandra Deis, 
+Adriel Vieira, ThienAn and Abhishek Tandon). I wish you all best of luck and I 
+hope you guys go to the 2nd phase, you totally deserve it.
