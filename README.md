@@ -172,20 +172,50 @@ Basically, we consider the 4 main concepts that help us to define when update
 the model and how much each user contributes to the model:
 
 - Round: A time step that when finished the federated model is updated;
-- Users batch size: The number of users that is required to complete a round and update the model;
+- Users batch size: The number of users that is required to complete a round and update the model (chosen to be 20);
 - Users sample size: Different users have different keyboard usage, being some
 more active than others. In order to make them all have the same weight, we 
 reduced the sample size of each user to its bare-minimum (since each user is required to have
-at least a minimum amount of tweets in order to be included in the dataset). 
+at least a minimum amount of tweets in order to be included in the dataset). It was also chosen to be 20.
 - Early stopping: Since each user may train faster than what was possible with
 the local setup, we can impose an early stopping mechanism to avoid overfitting
-for each user which would represent poor models in general.
+for each user which would represent poor models in general. The training is halted
+after 10 epochs of no average improvement on validation loss.
 
-Put all these factors together, we were expected to find that the federated
+Putting all these factors together, we were expected to find that the federated
 model performed just as good as the local model, but consuming less server time
 and improving the overall prediction for each individual user. 
 
 Top-1 Federated Learning Accuracy      |  Top-3 Federated Learning Accuracy
 :-------------------------:|:-------------------------:
 ![](top1_fl.png)  |  ![](top3_fl.png)
+
+The results indicate that the perfomance of our model gradually decreases as more
+users helped to train the model and the more it is updated over rounds. This
+result is not what was found by Google AI Team and I can hypothesize about some
+issues that may affect the performance:
+
+- The embedding layer is being updated. Regardless the requires_grad variable is
+set to False the backward pass during BackProgation executed 
+by the optimizer in pysyft PointerTensors are failing to preserve the embedding
+weights. Despite the few updates on the embedding layer, it could imply that some users
+have slightly different meanings for each word token, representing a collapse
+further ahead during the training process;
+
+- The updates aggregate some error due to the PointerTensor operations from Pysyft.
+Those errors express themselves the farther along we go with the training process;
+
+- The data presented during the last rounds is very different from the presented
+data introduced to the Neural Network until that point. It is a very unlikely scenario
+since it would imply that people started using language differently than the
+Neural Network would expect after seeing so much data during the server-side training
+stage. 
+
+All the hypotheses were briefly tested during the development of this project. The
+first and second ones were showed to actually affect the performance over rounds. Although
+I was able to identify the problem, due to the deadline of the current project,
+I could solve them satisfactorily and show better results that would encourage
+the usage of both Pysyft and Pytorch for toy models Federated Learning Projects.
+
+
 
